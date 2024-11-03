@@ -2,6 +2,17 @@
 
 module Bints
 
+# lo and hi are not checked for type - could be different and should work
+
+# see https://docs.julialang.org/en/v1/manual/types/#Primitive-Types-1
+# see https://discourse.julialang.org/t/declaring-int256/29911
+
+# LLVM can work on arbitrary fixed length bitvectors
+# - so that could another approach to very large numbers
+# At the moment, this code works for Int64, and should also work for Int128
+
+
+
 struct Bint{lo,hi} <: Integer
         n
 
@@ -58,7 +69,7 @@ Base.Float64( n::Bint ) = Float64( n.n )
 
 # arithmetic:
 
-import Base.:+
+import Base.+
 function Base.:+( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
  
         lo = Base.Checked.checked_add( lo1, lo2)
@@ -78,7 +89,7 @@ function Base.:-( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
         return Bint{ lo, hi }( n1.n - n2.n, Val{false}() )
 end
 
-import Base.:*
+import Base.*
 function Base.:*( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
  
         y1 = Base.Checked.checked_mul( lo1, lo2)
@@ -95,13 +106,13 @@ end
 
 
 # unary negate
-import Base.:-
+import Base.-
 function Base.:-( n1::Bint{lo1,hi1} ) where {lo1,hi1}
         return Bint{ -hi1, -lo1 }( -n1.n )
 end
 
 # ones complement:
-import Base.:~
+import Base.~
 function Base.:~( n1::Bint{lo1,hi1} ) where {lo1,hi1}
         return Bint{ ~hi1, ~lo1 }( ~n1.n )
 end
@@ -112,7 +123,7 @@ end
 # can have left shift because it should be lossless
 # but don't have right shift because it would be lossy
 # this function is used when adding fixpts with different exponents
-import Base.:<<
+import Base.<<
 function Base.:<<( n1::Bint{lo,hi}, n2::Int64 ) where {lo,hi}
 
         # assuming that none of the following lines overflow
@@ -159,6 +170,32 @@ function sBint( ::Type{Bint{lo,hi} } ) where { lo, hi }
         return Bint{lo1,hi1}
 end
 
+
+# TODO: get rid of the floating point stuff below - should all be integer
+
+# Note: this is acting on the type only
+# so show( Bint{-3,3}(2) ) is using this to show the type, and using Julia builtin 
+# stuff to show the value 2.
+function Base.show( io::IO, ::Type{Bint{lo,hi}} ) where { lo, hi }
+        if ( lo < 0 )
+                # signed:
+                if ispow2( -lo ) && ispow2( hi+1 ) && -lo == hi+1
+                        nbits = round( Int, log2( hi + 1 ) ) + 1
+                        print(io, "sBint(", nbits, ")" )
+                        return nothing
+                end
+        end
+        if lo == 0 && ispow2( hi + 1 )
+                # unsigned and power of two
+                nbits = round( Int, log2( hi + 1 ) )
+                print(io, "uBint(", nbits, ")" )
+
+                return nothing
+        end
+
+        # default case:        
+        print(io, "Bint{", lo, ",", hi, "}" )
+end 
 
 
 
