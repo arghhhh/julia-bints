@@ -24,7 +24,27 @@ using Test
         @test sBint(4) == Bint{-8,7}
         @test sBint( Bint{2,5} ) == Bint{-8,7}
 
+        @test zero( Bint{-5,5} ) == Bint{-5,5}(0)
+        @test one( Bint{-5,5} ) == Bint{-5,5}(1)
+        @test_throws OverflowError zero( Bint{2,5} )
+
+        @test clamp( 10,  Bint{-5,5} ) == Bint{-5,5}(5)
+        @test Int( Bint{-10,10}(5) ) == 5
+        @test Integer( Bint{-10,10}(5) ) == 5
+
+        @test Bint{-10,10}( 10, Val{false}() ) == Bint{-10,10}( 10 )
+        @test Float64( Bint{-10,10}( 6 ) ) == 6.0
+
+        @test Bint{-10,10}(1) + Bint{-10,10}(1) == Bint{-20,20}(2)
+        @test Bint{-10,10}(2) - Bint{-10,10}(1) == Bint{-20,20}(1)
+        @test Bint{-10,10}(2) * Bint{-10,10}(2) == Bint{-100,100}(4)
+
 end
+
+
+
+
+
 
 nothing
 
