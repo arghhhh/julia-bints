@@ -39,6 +39,13 @@ using Test
         @test Bint{-10,10}(2) - Bint{-10,10}(1) == Bint{-20,20}(1)
         @test Bint{-10,10}(2) * Bint{-10,10}(2) == Bint{-100,100}(4)
 
+        # type level operations:
+        @test Bint{-10,10} + Bint{-10,10} == Bint{-20,20}
+        @test Bint{-10,10} - Bint{-10,10} == Bint{-20,20}
+        @test Bint{-10,10} * Bint{-10,10} == Bint{-100,100}
+        @test -Bint{-1,10} == Bint{-10,1}
+        @test ~Bint{-1,10} == Bint{-11,0}
+
         @test sprint( show, uBint(4)    ) == "uBint(4)"
         @test sprint( show, sBint(4)    ) == "sBint(4)"
         @test sprint( show, uBint(4)(2) ) == "uBint(4)(2)"

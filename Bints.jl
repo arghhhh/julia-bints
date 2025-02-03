@@ -70,28 +70,37 @@ Base.Float64( n::Bint ) = Float64( n.n )
 # arithmetic:
 
 import Base.+
-function Base.:+( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
+
+function Base.:+( ::Type{Bint{lo1,hi1}}, ::Type{Bint{lo2,hi2}} ) where {lo1,hi1,lo2,hi2}
  
         lo = Base.Checked.checked_add( lo1, lo2)
         hi = Base.Checked.checked_add( hi1, hi2)
 
-        # the expectation is that the above is compiled to constants
+        return Bint{ lo, hi}
+end
+
+function Base.:+( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
+ 
+        # the expectation is that the above type level function is compiled to constants
         # and this entire function reduces to a single add without range checks
-        return Bint{ lo, hi}( n1.n + n2.n, Val{false}() )
+
+        return (Bint{lo1,hi1} + Bint{lo2,hi2})( n1.n + n2.n, Val{false}() )
 end
 
 import Base.:-
-function Base.:-( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
- 
+function Base.:-( ::Type{Bint{lo1,hi1}}, ::Type{Bint{lo2,hi2}} ) where {lo1,hi1,lo2,hi2}
         lo = Base.Checked.checked_sub( lo1, hi2)
         hi = Base.Checked.checked_sub( hi1, lo2)
+        return Bint{ lo, hi}
+end
 
-        return Bint{ lo, hi }( n1.n - n2.n, Val{false}() )
+function Base.:-( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
+        return (Bint{lo1,hi1} - Bint{lo2,hi2})( n1.n - n2.n, Val{false}() )
 end
 
 import Base.*
-function Base.:*( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
- 
+
+function Base.:*( ::Type{Bint{lo1,hi1}}, ::Type{Bint{lo2,hi2}} ) where {lo1,hi1,lo2,hi2}
         y1 = Base.Checked.checked_mul( lo1, lo2)
         y2 = Base.Checked.checked_mul( lo1, hi2)
         y3 = Base.Checked.checked_mul( hi1, lo2)
@@ -100,21 +109,33 @@ function Base.:*( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
         lo = min( y1, y2, y3, y4 )
         hi = max( y1, y2, y3, y4 )
 
-        return Bint{ lo, hi }( n1.n * n2.n, Val{false}() )
+        return Bint{ lo, hi }
+end
+
+function Base.:*( n1::Bint{lo1,hi1}, n2::Bint{lo2,hi2} ) where {lo1,hi1,lo2,hi2}
+        return (Bint{lo1,hi1} * Bint{lo2,hi2})( n1.n * n2.n, Val{false}() )
 end
 
 
 
 # unary negate
 import Base.-
+
+function Base.:-( ::Type{Bint{lo1,hi1}} ) where {lo1,hi1}
+        return Bint{ -hi1, -lo1 }
+end
+
 function Base.:-( n1::Bint{lo1,hi1} ) where {lo1,hi1}
-        return Bint{ -hi1, -lo1 }( -n1.n )
+        return (-Bint{lo1,hi1})( -n1.n )
 end
 
 # ones complement:
 import Base.~
+function Base.:~( ::Type{Bint{lo1,hi1}} ) where {lo1,hi1}
+        return Bint{ ~hi1, ~lo1 }
+end
 function Base.:~( n1::Bint{lo1,hi1} ) where {lo1,hi1}
-        return Bint{ ~hi1, ~lo1 }( ~n1.n )
+        return ~(Bint{lo1,hi1})( ~n1.n )
 end
 
 
